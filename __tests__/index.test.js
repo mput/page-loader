@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'mz/fs';
 import os from 'os';
 import path from 'path';
 import nock from 'nock';
@@ -10,7 +10,7 @@ axios.defaults.adapter = httpAdapter;
 const fixturesPath = '__tests__/fixtures/';
 
 describe('Page loader', () => {
-  const testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pl-'));
+  const testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'page-loader-'));
 
   test('should download page to folder', () => {
     const pageURL = 'https://en.wikipedia.org';
@@ -19,9 +19,9 @@ describe('Page loader', () => {
     nock(pageURL).get(pathName).replyWithFile(200, path.join(fixturesPath, fileName));
 
     expect.assertions(1);
-    return pageLoader(`${pageURL}${pathName}`, testDir).then(() => {
-      const fixturesFileBuf = fs.readFileSync(path.join(fixturesPath, fileName));
-      const resultFileBuf = fs.readFileSync(path.join(testDir, fileName));
+    return pageLoader(`${pageURL}${pathName}`, testDir).then(async () => {
+      const fixturesFileBuf = await fs.readFile(path.join(fixturesPath, fileName));
+      const resultFileBuf = await fs.readFile(path.join(testDir, fileName));
       expect(fixturesFileBuf.equals(resultFileBuf)).toBeTruthy();
     });
   });
