@@ -1,0 +1,57 @@
+{
+  "name": "mput-project-template",
+  "version": "0.1.0",
+  "description": "Template",
+  "engines": {
+    "node": "8"
+  },
+  "main": "dist/index.js",
+  "bin": {},
+  "scripts": {
+    "test": "jest --coverage",
+    "babel-node": "babel-node",
+    "eslint": "eslint",
+    "build": "NODE_ENV=production babel src --out-dir dist --source-maps inline",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "keywords": [],
+  "author": "mPut",
+  "license": "ISC",
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "**/*.{js,jsx}",
+      "!**/node_modules/**",
+      "!**/dist/**",
+      "!coverage/**"
+    ]
+  },
+  "dependencies": {
+    "commander": "^2.11.0",
+    "lodash": "^4.17.4"
+  },
+  "devDependencies": {
+    "babel-cli": "*",
+    "babel-core": "*",
+    "babel-eslint": "*",
+    "babel-jest": "*",
+    "babel-plugin-transform-runtime": "*",
+    "babel-preset-env": "*",
+    "babel-preset-flow": "*",
+    "babel-preset-stage-0": "*",
+    "eslint": "^4.10.0",
+    "eslint-config-airbnb-base": "*",
+    "eslint-plugin-import": "*",
+    "eslint-plugin-jest": "*",
+    "istanbul": "^0.4.5",
+    "jest": "^21",
+    "jest-cli": "*"
+  }
+}
