@@ -3,6 +3,11 @@ import axios from 'axios';
 import fs from 'mz/fs';
 import { URL } from 'url';
 import cheerio from 'cheerio';
+import debug from 'debug';
+
+const log = debug('page-loader');
+const logGetFile = debug('page-loader:loadFile');
+const logProd = debug('page-loader*');
 
 const buildName = (url, ending) => {
   const myURL = new URL(url);
@@ -18,7 +23,9 @@ const getFileNameAndExtension = (url) => {
   const base = url.slice(0, indexOfFirstDelimiter);
   const dotSymIndex = base.lastIndexOf('.');
   const name = base.slice(0, dotSymIndex);
-  const ext = base.slice(dotSymIndex, base.length);
+  const preExt = base.slice(dotSymIndex, base.length);
+  const indexOfExtSlash = (preExt.indexOf('/') > -1) ? preExt.indexOf('/') : preExt.length;
+  const ext = preExt.slice(0, indexOfExtSlash);
   return { name, ext };
 };
 
@@ -47,10 +54,15 @@ const loadFile = (url, baseURL, workDir, fileDir) => {
   const absoluteFilePath = path.resolve(workDir, fileDir, fileName);
   const relativeFilePath = path.join(fileDir, fileName);
   return axios({ url: absoluteUrl, responseType })
-    .then(({ data }) => fs.writeFile(absoluteFilePath, data))
+    .then(({ data }) => {
+      logGetFile('Writing file -  %s \nwith name - %s', url, absoluteFilePath);
+      fs.writeFile(absoluteFilePath, data).catch((err) => {
+        logProd(err);
+      });
+    })
     .then(() => ({ url, relativeFilePath, downloaded: true }))
     .catch(() => {
-      console.error('Can\'t load - ', absoluteUrl);
+      logProd('Can\'t load- %s', absoluteUrl);
       return { url, downloaded: false };
     });
 };
@@ -59,11 +71,15 @@ const loadPage = (url, dir = './') => {
   let pageContent;
   return axios.get(url)
     .then((res) => {
+      log('Received data from page %s', url);
       pageContent = res.data;
       const links = getLinks(pageContent);
       const folderName = buildName(url, '_file');
       fs.mkdir(path.resolve(dir, folderName)).catch((err) => {
-        throw new Error(err);
+        if (err.code === 'EEXIST') {
+          return;
+        }
+        logProd(err.code);
       });
       return Promise.all(links.map(link => loadFile(link, url, dir, folderName)));
     })
@@ -73,7 +89,10 @@ const loadPage = (url, dir = './') => {
       });
       const fileName = buildName(url, '.html');
       const filePath = path.resolve(dir, fileName);
+      log('Writing file %s', filePath);
       return fs.writeFile(filePath, pageContent);
+    }).catch((err) => {
+      logProd(err);
     });
 };
 
