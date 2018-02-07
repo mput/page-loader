@@ -5,7 +5,7 @@ import { URL } from 'url';
 import cheerio from 'cheerio';
 import debug from 'debug';
 
-const log = debug('page-loader');
+const log = debug('page-loader:loadHtml');
 const logGetFile = debug('page-loader:loadFile');
 const logProd = debug('page-loader*');
 
