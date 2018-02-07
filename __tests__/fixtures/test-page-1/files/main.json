@@ -1,0 +1,8 @@
+{
+  "name": "page-loader-mput",
+  "version": "0.0.1",
+  "description": "Page loader utility",
+  "engines": {
+    "node": "8"
+  }
+}

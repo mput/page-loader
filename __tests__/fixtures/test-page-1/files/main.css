@@ -1,0 +1,41 @@
+
+body {
+  font-family:helvetica, arial, sans;
+  width: 800px;
+  margin: 10px auto;
+}
+
+h1,h2,h3,h4,h5,h6 {
+  font-family: helvetica, sans;
+  font-weight: 100;
+}
+
+h1 {
+  font-size: 7vw;
+  margin-top: 0;
+}
+h1 {
+  font-size: 4vw;
+  margin-top: 10px;
+}
+a {
+  color: #6397b5;
+}
+p {
+  line-height: 1.5;
+  margin: 0.75em 0;
+}
+
+
+h4 {
+  color: #999;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+img {
+  display: block;
+  width: 600px;
+  margin: 0 auto;
+  padding: 15px 0 45px 0;
+}

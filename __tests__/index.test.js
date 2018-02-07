@@ -4,25 +4,57 @@ import path from 'path';
 import nock from 'nock';
 import axios from 'axios';
 import httpAdapter from 'axios/lib/adapters/http';
-import pageLoader from '../src';
+import loadPage from '../src';
 
 axios.defaults.adapter = httpAdapter;
 const fixturesPath = '__tests__/fixtures/';
 
-describe('Page loader', () => {
-  const testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'page-loader-'));
+describe('Test page with content', () => {
+  const pagePath = path.join(fixturesPath, 'test-page-1');
+  const filesPath = path.join(pagePath, 'files');
+  const pageURL = 'https://test-page.cat';
+  let tempDir;
 
-  test('should download page to folder', () => {
-    const pageURL = 'https://en.wikipedia.org';
-    const pathName = '/wiki/Main_Page';
-    const fileName = 'en-wikipedia-org-wiki-Main_Page.html';
-    nock(pageURL).get(pathName).replyWithFile(200, path.join(fixturesPath, fileName));
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'page-loader-'));
+    console.log(tempDir);
+  });
 
-    expect.assertions(1);
-    return pageLoader(`${pageURL}${pathName}`, testDir).then(async () => {
-      const fixturesFileBuf = await fs.readFile(path.join(fixturesPath, fileName));
-      const resultFileBuf = await fs.readFile(path.join(testDir, fileName));
-      expect(fixturesFileBuf.equals(resultFileBuf)).toBeTruthy();
-    });
+  test('Server return all links', async () => {
+    nock(pageURL).get('/').replyWithFile(200, path.join(pagePath, 'test-page.html'));
+    nock(pageURL).get('/files/main.css').replyWithFile(200, path.join(filesPath, 'main.css'));
+    nock(pageURL).get('/files/main.json').replyWithFile(200, path.join(filesPath, 'main.json'));
+    nock(pageURL).get('/files/ugly-cat.jpg').replyWithFile(200, path.join(filesPath, 'ugly-cat.jpg'));
+    nock(pageURL).get('/files/cat-catcher.gif').delay(300).replyWithFile(200, path.join(filesPath, 'cat-catcher.gif'));
+    nock('https://maxcdn.bootstrapcdn.com').get('/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css').replyWithFile(200, path.join(filesPath, 'bootstrap.min.css'));
+    nock('https://visualhunt.com').get('/photos/l/7/animated-cat-cat-windows.jpg').delay(300).replyWithFile(200, path.join(filesPath, 'ugly-cat.jpg'));
+
+    await loadPage(pageURL, tempDir);
+    const resultPage = await fs.readFile(path.join(tempDir, 'test-page-cat.html'), 'utf8');
+    const fixtureResultPage = await fs.readFile(path.join(pagePath, 'result_pages', 'all-links-test-page-cat.html'), 'utf8');
+    expect(resultPage).toEqual(fixtureResultPage);
+    const isFileExist = await fs.exists(path.join(tempDir, 'test-page-cat_file/maxcdn-bootstrapcdn-com-bootstrap-4-0-0-alpha-6-css-bootstrap-min.css'));
+    expect(isFileExist).toBeTruthy();
+  });
+
+  test('Server return one link, and errors for other links', async () => {
+    nock(pageURL).get('/').replyWithFile(200, path.join(pagePath, 'test-page.html'));
+    nock('https://maxcdn.bootstrapcdn.com').get('/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css').replyWithFile(200, path.join(filesPath, 'bootstrap.min.css'));
+    nock(pageURL)
+      .get('/files/main.css')
+      .reply(404)
+      .get('/files/main.json')
+      .reply(404)
+      .get('/files/ugly-cat.jpg')
+      .reply(404)
+      .get('/files/cat-catcher.gif')
+      .reply(404);
+    nock('https://visualhunt.com').get('/photos/l/7/animated-cat-cat-windows.jpg').reply(404);
+
+
+    await loadPage(pageURL, tempDir);
+    const resultPage = await fs.readFile(path.join(tempDir, 'test-page-cat.html'), 'utf8');
+    const fixtureResultPage = await fs.readFile(path.join(pagePath, 'result_pages', 'one-links-test-page-cat.html'), 'utf8');
+    expect(resultPage).toEqual(fixtureResultPage);
   });
 });

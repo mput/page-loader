@@ -36,6 +36,7 @@
   },
   "dependencies": {
     "axios": "^0.17.1",
+    "cheerio": "^1.0.0-rc.2",
     "commander": "^2.11.0",
     "lodash": "^4.17.4",
     "mz": "^2.7.0",
