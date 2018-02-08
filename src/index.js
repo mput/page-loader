@@ -1,32 +1,24 @@
 import path from 'path';
-import axios from 'axios';
 import fs from 'mz/fs';
-import { URL } from 'url';
+import axios from 'axios';
+import url from 'url';
 import cheerio from 'cheerio';
 import debug from 'debug';
 
-const log = debug('page-loader:loadHtml');
-const logGetFile = debug('page-loader:loadFile');
+const log = debug('page-loader');
 const logProd = debug('page-loader*');
 
-const buildName = (url, ending) => {
-  const myURL = new URL(url);
-  const pageName = `${myURL.host}${myURL.pathname === '/' ? '' : myURL.pathname}`.replace(/\W/g, '-');
+const buildName = (fileUrl, ending) => {
+  const parsedUrl = url.parse(fileUrl);
+  const pageName = `${parsedUrl.host}${parsedUrl.pathname === '/' ? '' : parsedUrl.pathname}`.replace(/\W/g, '-');
   return `${pageName}${ending}`;
 };
 
-const getFileNameAndExtension = (url) => {
-  const questionMarkSymIndex = (url.indexOf('?') > -1) ? url.indexOf('?') : url.length;
-  const hashSymIndex = (url.indexOf('#') > -1) ? url.indexOf('#') : url.length;
-  const indexOfFirstDelimiter = (questionMarkSymIndex <= hashSymIndex) ?
-    questionMarkSymIndex : hashSymIndex;
-  const base = url.slice(0, indexOfFirstDelimiter);
-  const dotSymIndex = base.lastIndexOf('.');
-  const name = base.slice(0, dotSymIndex);
-  const preExt = base.slice(dotSymIndex, base.length);
-  const indexOfExtSlash = (preExt.indexOf('/') > -1) ? preExt.indexOf('/') : preExt.length;
-  const ext = preExt.slice(0, indexOfExtSlash);
-  return { name, ext };
+const getFileNameAndExtension = (fileUrl) => {
+  const parsedUrl = url.parse(fileUrl);
+  const shortUrl = url.format({ ...parsedUrl, search: null, hash: null });
+  const dotIndex = shortUrl.lastIndexOf('.') > -1 ? shortUrl.lastIndexOf('.') : shortUrl.length;
+  return { name: shortUrl.slice(0, dotIndex), ext: shortUrl.slice(dotIndex, shortUrl.length) };
 };
 
 const getLinks = (pageContent) => {
@@ -46,53 +38,50 @@ const getLinks = (pageContent) => {
   return Array.from(links);
 };
 
-const loadFile = (url, baseURL, workDir, fileDir) => {
-  const absoluteUrl = new URL(url, baseURL).href;
-  const { name, ext } = getFileNameAndExtension(absoluteUrl);
+const loadFile = (link, baseURL, workDir, fileDir) => {
+  const absURL = url.resolve(baseURL, link);
+  const { name, ext } = getFileNameAndExtension(absURL);
   const responseType = ['.png', '.jpg', '.ico', '.gif'].includes(ext) ? 'arraybuffer' : 'json';
   const fileName = buildName(name, ext);
   const absoluteFilePath = path.resolve(workDir, fileDir, fileName);
   const relativeFilePath = path.join(fileDir, fileName);
-  return axios({ url: absoluteUrl, responseType })
+  return axios({ url: absURL, responseType })
     .then(({ data }) => {
-      logGetFile('Writing file -  %s \nwith name - %s', url, absoluteFilePath);
-      fs.writeFile(absoluteFilePath, data).catch((err) => {
-        logProd(err);
-      });
+      log('Writing file -  %s \nwith name - %s', link, absoluteFilePath);
+      return fs.writeFile(absoluteFilePath, data);
     })
-    .then(() => ({ url, relativeFilePath, downloaded: true }))
+    .then(() => ({ link, relativeFilePath, downloaded: true }))
     .catch(() => {
-      logProd('Can\'t load- %s', absoluteUrl);
-      return { url, downloaded: false };
+      logProd('Can\'t load- %s', absURL);
+      return { link, downloaded: false };
     });
 };
 
-const loadPage = (url, dir = './') => {
+const loadPage = (pageUrl, dir = './') => {
   let pageContent;
-  return axios.get(url)
+  return axios.get(pageUrl)
     .then((res) => {
-      log('Received data from page %s', url);
+      log('Received data from page %s', pageUrl);
       pageContent = res.data;
       const links = getLinks(pageContent);
-      const folderName = buildName(url, '_file');
+      const folderName = buildName(pageUrl, '_file');
       fs.mkdir(path.resolve(dir, folderName)).catch((err) => {
         if (err.code === 'EEXIST') {
+          logProd(err);
           return;
         }
-        logProd(err.code);
+        throw new Error(err);
       });
-      return Promise.all(links.map(link => loadFile(link, url, dir, folderName)));
+      return Promise.all(links.map(link => loadFile(link, pageUrl, dir, folderName)));
     })
     .then((downloaderResults) => {
       downloaderResults.filter(res => res.downloaded).forEach((res) => {
-        pageContent = pageContent.replace(new RegExp(res.url, 'g'), res.relativeFilePath);
+        pageContent = pageContent.replace(new RegExp(res.link, 'g'), res.relativeFilePath);
       });
-      const fileName = buildName(url, '.html');
+      const fileName = buildName(pageUrl, '.html');
       const filePath = path.resolve(dir, fileName);
       log('Writing file %s', filePath);
       return fs.writeFile(filePath, pageContent);
-    }).catch((err) => {
-      logProd(err);
     });
 };
 
