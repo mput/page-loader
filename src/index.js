@@ -6,7 +6,6 @@ import cheerio from 'cheerio';
 import debug from 'debug';
 
 const log = debug('page-loader');
-const logProd = debug('page-loader*');
 
 const buildName = (fileUrl, ending) => {
   const parsedUrl = url.parse(fileUrl);
@@ -52,10 +51,21 @@ const loadFile = (link, baseURL, workDir, fileDir) => {
     })
     .then(() => ({ link, relativeFilePath, downloaded: true }))
     .catch(() => {
-      logProd('Can\'t load- %s', absURL);
+      console.error('Can\'t load- %s', absURL);
       return { link, downloaded: false };
     });
 };
+
+const createFolderAndLoadFiles = (links, pageUrl, dir, folderName) =>
+  fs.mkdir(path.resolve(dir, folderName))
+    .then(() => Promise.all(links.map(link => loadFile(link, pageUrl, dir, folderName))))
+    .catch((err) => {
+      if (err.code === 'EEXIST') {
+        console.error(err);
+        return;
+      }
+      throw new Error(err);
+    });
 
 const loadPage = (pageUrl, dir = './') => {
   let pageContent;
@@ -65,14 +75,7 @@ const loadPage = (pageUrl, dir = './') => {
       pageContent = res.data;
       const links = getLinks(pageContent);
       const folderName = buildName(pageUrl, '_file');
-      fs.mkdir(path.resolve(dir, folderName)).catch((err) => {
-        if (err.code === 'EEXIST') {
-          logProd(err);
-          return;
-        }
-        throw new Error(err);
-      });
-      return Promise.all(links.map(link => loadFile(link, pageUrl, dir, folderName)));
+      return createFolderAndLoadFiles(links, pageUrl, dir, folderName);
     })
     .then((downloaderResults) => {
       downloaderResults.filter(res => res.downloaded).forEach((res) => {

@@ -57,4 +57,9 @@ describe('Test page with content', () => {
     const fixtureResultPage = await fs.readFile(path.join(pagePath, 'result_pages', 'one-links-test-page-cat.html'), 'utf8');
     expect(resultPage).toEqual(fixtureResultPage);
   });
+
+  test('Directory not exist', async () => {
+    nock(pageURL).get('/').replyWithFile(200, path.join(pagePath, 'test-page.html'));
+    await expect(loadPage(pageURL, path.join(tempDir, '/wrong-dir'))).rejects.toThrow('Error: ENOENT');
+  });
 });

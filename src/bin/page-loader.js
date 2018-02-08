@@ -11,6 +11,7 @@ program
   .action((url, options) => {
     pageLoader(url, options.output).catch((err) => {
       console.error(err);
+      process.exit(1);
     });
   })
   .parse(process.argv);
