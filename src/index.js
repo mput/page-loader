@@ -56,9 +56,9 @@ const loadFile = (link, baseURL, workDir, fileDir) => {
     });
 };
 
-const createFolderAndLoadFiles = (links, pageUrl, dir, folderName) =>
+const createFolderAndLoadFiles = (links, baseUrl, dir, folderName) =>
   fs.mkdir(path.resolve(dir, folderName))
-    .then(() => Promise.all(links.map(link => loadFile(link, pageUrl, dir, folderName))))
+    .then(() => Promise.all(links.map(link => loadFile(link, baseUrl, dir, folderName))))
     .catch((err) => {
       if (err.code === 'EEXIST') {
         console.error(err);
