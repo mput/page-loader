@@ -10,7 +10,7 @@ program
   .arguments('<url>')
   .action((url, options) => {
     pageLoader(url, options.output).catch((err) => {
-      console.error(err);
+      console.error('%s', err);
       process.exit(1);
     });
   })

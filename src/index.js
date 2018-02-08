@@ -50,22 +50,21 @@ const loadFile = (link, baseURL, workDir, fileDir) => {
       return fs.writeFile(absoluteFilePath, data);
     })
     .then(() => ({ link, relativeFilePath, downloaded: true }))
-    .catch(() => {
-      console.error('Can\'t load- %s', absURL);
+    .catch((err) => {
+      console.error('Can\'t load file- %s,\n%s.', absURL, err);
       return { link, downloaded: false };
     });
 };
 
 const createFolderAndLoadFiles = (links, baseUrl, dir, folderName) =>
   fs.mkdir(path.resolve(dir, folderName))
-    .then(() => Promise.all(links.map(link => loadFile(link, baseUrl, dir, folderName))))
-    .catch((err) => {
+    .then(null, (err) => {
       if (err.code === 'EEXIST') {
-        console.error(err);
+        console.error('%s', err);
         return;
       }
-      throw new Error(err);
-    });
+      throw err;
+    }).then(() => Promise.all(links.map(link => loadFile(link, baseUrl, dir, folderName))));
 
 const loadPage = (pageUrl, dir = './') => {
   let pageContent;

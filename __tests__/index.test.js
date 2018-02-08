@@ -37,21 +37,21 @@ describe('Test page with content', () => {
     expect(isFileExist).toBeTruthy();
   });
 
-  test('Server return one link, and errors for other links', async () => {
+  test('Server return only one link, dir already exist', async () => {
     nock(pageURL).get('/').replyWithFile(200, path.join(pagePath, 'test-page.html'));
     nock('https://maxcdn.bootstrapcdn.com').get('/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css').replyWithFile(200, path.join(filesPath, 'bootstrap.min.css'));
     nock(pageURL)
       .get('/files/main.css')
       .reply(404)
       .get('/files/main.json')
-      .reply(404)
+      .reply(500)
       .get('/files/ugly-cat.jpg')
       .reply(404)
       .get('/files/cat-catcher.gif')
       .reply(404);
     nock('https://visualhunt.com').get('/photos/l/7/animated-cat-cat-windows.jpg').reply(404);
 
-
+    await fs.mkdir(path.join(tempDir, './test-page-cat_file'));
     await loadPage(pageURL, tempDir);
     const resultPage = await fs.readFile(path.join(tempDir, 'test-page-cat.html'), 'utf8');
     const fixtureResultPage = await fs.readFile(path.join(pagePath, 'result_pages', 'one-links-test-page-cat.html'), 'utf8');
@@ -60,6 +60,6 @@ describe('Test page with content', () => {
 
   test('Directory not exist', async () => {
     nock(pageURL).get('/').replyWithFile(200, path.join(pagePath, 'test-page.html'));
-    await expect(loadPage(pageURL, path.join(tempDir, '/wrong-dir'))).rejects.toThrow('Error: ENOENT');
+    await expect(loadPage(pageURL, path.join(tempDir, '/wrong-dir'))).rejects.toThrow('ENOENT');
   });
 });
