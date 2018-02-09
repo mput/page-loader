@@ -17,7 +17,6 @@ describe('Test page with content', () => {
 
   beforeEach(() => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'page-loader-'));
-    console.log(tempDir);
   });
 
   test('Server return all links', async () => {
@@ -60,6 +59,11 @@ describe('Test page with content', () => {
 
   test('Directory not exist', async () => {
     nock(pageURL).get('/').replyWithFile(200, path.join(pagePath, 'test-page.html'));
-    await expect(loadPage(pageURL, path.join(tempDir, '/wrong-dir'))).rejects.toThrow('ENOENT');
+
+    try {
+      await loadPage(pageURL, path.join(tempDir, '/wrong-dir'));
+    } catch (err) {
+      expect(err.code).toEqual('ENOENT');
+    }
   });
 });

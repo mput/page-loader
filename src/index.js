@@ -51,7 +51,7 @@ const loadFile = (link, baseURL, workDir, fileDir) => {
     })
     .then(() => ({ link, relativeFilePath, downloaded: true }))
     .catch((err) => {
-      console.error('Can\'t load file- %s,\n%s.', absURL, err);
+      log('Can\'t load file- %s,\n%s.', absURL, err);
       return { link, downloaded: false };
     });
 };
@@ -60,7 +60,7 @@ const createFolderAndLoadFiles = (links, baseUrl, dir, folderName) =>
   fs.mkdir(path.resolve(dir, folderName))
     .then(null, (err) => {
       if (err.code === 'EEXIST') {
-        console.error('%s', err);
+        log('%s', err);
         return;
       }
       throw err;
