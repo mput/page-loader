@@ -62,6 +62,7 @@ describe('Test page with content', () => {
 
     try {
       await loadPage(pageURL, path.join(tempDir, '/wrong-dir'));
+      expect(true).toBe(false);
     } catch (err) {
       expect(err.code).toEqual('ENOENT');
     }
