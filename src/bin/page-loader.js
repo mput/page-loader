@@ -9,9 +9,13 @@ program
   .option('-o --output [dir]', 'Specify an output directory.')
   .arguments('<url>')
   .action((url, options) => {
-    pageLoader(url, options.output).catch((err) => {
-      console.error('%s', err);
-      process.exit(1);
-    });
+    pageLoader(url, options.output)
+      .then((fileName) => {
+        console.log('Page was downloaded as "%s"', fileName);
+      })
+      .catch((err) => {
+        console.error('%s', err);
+        process.exit(1);
+      });
   })
   .parse(process.argv);
